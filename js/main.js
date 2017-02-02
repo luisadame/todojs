@@ -1,5 +1,13 @@
 "use strict";
 
+//|=================================|//
+//   IF YOU ARE READING THIS I HOPE  //
+// 	  YOU ARE HAVING A NICE DAY :)   //
+//   PLEASE LET ME KNOW IF YOU USE   //
+// THIS DOCUMENT FOR WHATEVER REASON //
+//        mrluissan@gmail.com        //
+//|=================================|//
+
 // DOM elements
 const todo_input 		= document.getElementById('to-do');
 const todos_wrapper 	= document.getElementById('todos');
@@ -8,47 +16,60 @@ const add_todo_btn 		= document.getElementById('add-todo');
 const delete_todo_btn 	= document.querySelectorAll('.delete');
 
 // TODOS container
+// Retrieve the stored (localStorage) content or initialize an empty array
 let todos_container = localStorage.todos !== undefined ? JSON.parse(localStorage.todos) : [];
 
-// create the todo module
+// Let's create a beautiful and encapsulated module :)
 const todos = (() => {
 
-// Methods
-	// Check if an input is empty
-	const isEmpty = (input) => {
-		return input !== "" ? false : true;
-	};
+	//|=======|//
+	// Methods //
+	//|=======|//
 
-	// Clear input
-	const clearInput = (input) => {
-		input.value = "";
-	};
+	// Checks if an input is empty (maybe this fn is not necessary?)
+	const isEmpty = (input) => input !== "" ? false : true;
 
-	// Get a todo id
+	// Clear the todo input
+	const clearInput = (input) => input.value = "";
+
+	// Get the id of a todo
 	const getTodoId = e => parseInt(e.target.parentElement.dataset.id);
 
-	// Return index from todo id
+	// Return the index of a todo from the id of a todo
 	const search = id => todos_container.indexOf(todos_container.find(todo => todo.id === id));
+
+	// Syncronize the living stored todos with the offline storage
+	const syncStorage = () => localStorage.setItem('todos', JSON.stringify(todos_container));
+
+	// Make todos old, because we don't want to end the animation party
+	const makeOld = () => {
+		todos_container.forEach(todo => {
+			todo.new = false;
+		});
+		syncStorage();
+	};
 
 	// Add todo
 	const add = () => {
-		let input = todo_input.value;
+		const input = todo_input.value;
 
 		if (!isEmpty(input)) {
 			
-			let todo = {
+			const todo = {
 				content: input,
-				id: todos_container.length
+				id: todos_container.length,
+				// By being new the render method will aplly an animation to this new-brand todo
+				new: true
 			};
 			todos_container.push(todo);
 
 			clearInput(todo_input);
-			render();
 			syncStorage();
+			render().then(makeOld);
 		}
 	};
 
-	// Update todo
+	// Updates a todo
 	const update = (e) => {
 		todos_container[search(getTodoId(e))].content = e.target.textContent;
 		e.target.contentEditable = false;
@@ -57,26 +78,39 @@ const todos = (() => {
 
 	// Delete todo
 	const remove = (e) => {
-		todos_container.splice(search(getTodoId(e)), 1);
-		render();
-		syncStorage();
+		return new Promise((resolve, reject) => {
+			todos_container.splice(search(getTodoId(e)), 1);
+			e.target.parentElement.classList.add('beingRemoved');
+			setTimeout(resolve, 400);
+		})
+		.then(render)
+		.then(syncStorage);
 	};
 
 	const render = () => {
-		let toBeAdded = '';
-		todos_container.forEach(todo => {
-			let todoHTML = `
-				<div class="todo card" data-id="${todo.id}">
-					<div class="todo-content">${todo.content}</div><button class="delete">X</button>
-				</div>
-			`;
-			toBeAdded += todoHTML;
-		});
-		todos_wrapper.innerHTML = toBeAdded;
-	};
+		return new Promise((resolve, reject) => {
+			let toBeAdded = '';
 
-	const syncStorage = () => {
-		localStorage.setItem('todos', JSON.stringify(todos_container));
+			todos_container.forEach(todo => {
+				let todoHTML = `
+					<div class="todo card ${todo.new ? 'new-todo' : ''}" data-id="${todo.id}">
+						<div class="todo-content">${todo.content}</div><button class="delete">X</button>
+					</div>
+				`;
+				toBeAdded += todoHTML;
+			});
+
+			todos_wrapper.innerHTML = toBeAdded.length > 0 ? toBeAdded : `<p id="freetime">There is nothing to do!<br>Enjoy your free time :)</p>`;
+			
+			setTimeout(() => {
+				if (document.querySelector('.new-todo') !== null) {
+					document.querySelector('.new-todo').classList.remove('new-todo');
+					makeOld();
+				}				
+			}, 150);
+			
+			resolve();
+		});
 	};
 
 	return {
@@ -88,26 +122,35 @@ const todos = (() => {
 	};
 })();
 
+// Initialize the application
 todos.init();
 
-// Hook up the listeners
+//|=====================|//
+// Hook up the listeners //
+//|=====================|//
+
+// Add todo by clicking the + button
 add_todo_btn.addEventListener('click', todos.add);
 
-document.body.addEventListener('keyup', e => {
+// Add todo by pressing Enter
+todo_input.addEventListener('keyup', e => {
 	if(e.keyCode === 13){
 		todos.add();
 	}
 });
 
-document.body.addEventListener('click', event => {
+// Delete a todo by clicking on a dynamically created delete button
+todos_wrapper.addEventListener('click', event => {
 	if(event.target.classList.contains('delete')){
 		todos.remove(event);
 	}	
 });
 
-document.body.addEventListener('dblclick', event => {
+// Updates a todo by double clicking inside a todo-card
+todos_wrapper.addEventListener('dblclick', event => {
 	if(event.target.classList.contains('todo-content')){
 		event.target.contentEditable = true;
+		// Run the update method by focusing out of the editable todo
 		document.querySelectorAll('.todo-content[contenteditable=true]')
 			.forEach( todo => todo.addEventListener('blur', todos.update));
 	}
