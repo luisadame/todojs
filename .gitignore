@@ -1,1 +1,4 @@
-css/.sass-cache
+.sass-cache/
+*.css.map
+.jshintrc
+.mrluissan
