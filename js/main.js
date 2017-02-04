@@ -198,6 +198,6 @@ todos_wrapper.addEventListener('scroll', () => {
 
 (() => {
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/service_worker.js');
+        navigator.serviceWorker.register('/todojs/service_worker.js');
     }
 })();
