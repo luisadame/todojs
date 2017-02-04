@@ -17,7 +17,11 @@ function precache() {
             '/',
             './index.html',
             './css/app.css',
-            './js/main.js'
+            './js/main.js',
+            '/todojs/',
+            '/todojs/index.html',
+            '/todojs/css/app.css',
+            '/todojs/js/main.js',
         ]);
     });
 }
