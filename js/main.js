@@ -195,3 +195,9 @@ todos_wrapper.addEventListener('scroll', () => {
         todos_header.classList.remove('header-scrolled');
     }
 });
+
+(() => {
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/service_worker.js');
+    }
+})();
